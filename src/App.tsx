@@ -1,21 +1,11 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
+import { HashRouter, Routes, Route, useLocation } from 'react-router-dom'
 import Preloader from './components/Preloader'
 import Rail from './components/Rail'
 import Cursor from './components/Cursor'
-import Hero from './components/Hero'
-import Marquee from './components/Marquee'
-import About from './components/About'
-import Revisions from './components/Revisions'
-import Builds from './components/Builds'
-import Stack from './components/Stack'
-import Spine from './components/Spine'
-import Contact from './components/Contact'
+import Avatar from './components/Avatar'
 import EasterEgg from './components/EasterEgg'
-import { useReveal } from './lib/useReveal'
 import { initLenis } from './lib/lenis'
-
-/* avatar + its whole R3F runtime are a separate chunk */
-const Avatar = lazy(() => import('./components/Avatar'))
 
 function Atmos() {
   return (
@@ -26,13 +16,31 @@ function Atmos() {
   )
 }
 
+const Home = lazy(() => import('./pages/Home'))
+const Projects = lazy(() => import('./pages/Projects'))
+const ProjectPage = lazy(() => import('./pages/Project'))
+
 export default function App() {
   const [booted, setBooted] = useState(false)
-  useReveal()
 
   useEffect(() => {
     initLenis()
   }, [])
+
+  return (
+    <HashRouter>
+      <Inner booted={booted} setBooted={setBooted} />
+    </HashRouter>
+  )
+}
+
+function Inner({ booted, setBooted }: { booted: boolean; setBooted: (b: boolean) => void }) {
+  const { pathname } = useLocation()
+
+  // scroll to top on route change (hash router)
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   return (
     <>
@@ -41,14 +49,13 @@ export default function App() {
       <Preloader onBoot={() => setBooted(true)} />
       <Rail />
       <main className="page">
-        <Hero booted={booted} />
-        <Marquee />
-        <About />
-        <Revisions />
-        <Builds />
-        <Stack />
-        <Spine />
-        <Contact />
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/" element={<Home booted={booted} />} />
+            <Route path="/projects" element={<Projects booted={booted} />} />
+            <Route path="/projects/:slug" element={<ProjectPage booted={booted} />} />
+          </Routes>
+        </Suspense>
       </main>
       <Suspense fallback={null}>
         <Avatar booted={booted} />

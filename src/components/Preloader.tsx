@@ -12,7 +12,7 @@ const LINES: { at: number; cls: string; txt: string }[] = [
   { at: 0.52, cls: 'b-dim', txt: '[FLSH] personality.rom ............... 100%' },
   { at: 0.78, cls: 'b-dim', txt: '[NET ] routing ....................... 52/52' },
   { at: 1.02, cls: 'b-dim', txt: '[DRC ] violations .................... 0' },
-  { at: 1.28, cls: 'b-final', txt: 'SYS READY — HANDS ON DECK' },
+  { at: 1.28, cls: 'b-final', txt: 'SYS READY · HANDS ON DECK' },
 ]
 
 const WIPE_AT = 1.75 // s

@@ -297,7 +297,14 @@ section.block { padding: 14vh 0 8vh; }
   position: fixed;
   inset: 0;
   z-index: 0;
-  pointer-events: none;
+  /* the canvas is pure backdrop: it must NEVER intercept clicks.
+     R3F re-enables pointer-events on its inner divs, so force it off. */
+  pointer-events: none !important;
+}
+.hero-canvas div,
+.hero-canvas canvas,
+.hero-canvas canvas * {
+  pointer-events: none !important;
 }
 
 .hero-content {
@@ -905,7 +912,16 @@ section.block { padding: 14vh 0 8vh; }
 }
 
 @media (max-width: 700px) {
-  .avatar-dock { display: none; }
+  /* he stays on phones — just smaller, tucked into the corner */
+  .avatar-dock { right: 8px; bottom: 6px; gap: 7px; }
+  .avatar-stage { width: 104px; height: 130px; }
+  .avatar-bubble {
+    max-width: 190px;
+    font-size: 10.5px;
+    padding: 9px 11px;
+    margin-bottom: 88px;
+  }
+  .avatar-tag { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

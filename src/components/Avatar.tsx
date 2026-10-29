@@ -135,12 +135,12 @@ function PocketHazem({ mood, talking }: {
       mouth.current.scale.x = THREE.MathUtils.damp(mouth.current.scale.x, angry ? 0.85 : giggle ? 1.2 : 1, 12, d)
     }
     if (jaw.current) {
-      let open = 0.55 // idle: relaxed grin, teeth peeking
-      if (angry) open = 0.18 // gritted
-      else if (giggle) open = 1.6 + Math.sin(t * 11) * 0.25 // big laugh, fluttering
-      else if (talking) open = 0.6 + Math.abs(Math.sin(t * 13)) * 0.9 // jabber
+      let open = 0.35 // idle: closed grin, just the lips arc + teeth peek
+      if (angry) open = 0.12 // gritted
+      else if (giggle) open = 1.8 + Math.sin(t * 11) * 0.3 // big laugh, fluttering
+      else if (talking) open = 0.5 + Math.abs(Math.sin(t * 13)) * 1.1 // jabber — big, readable swings
       jaw.current.scale.y = THREE.MathUtils.damp(jaw.current.scale.y, open, 18, d)
-      jaw.current.position.y = (giggle ? Math.sin(t * 11) * 0.012 : 0)
+      jaw.current.position.y = (giggle ? Math.sin(t * 11) * 0.014 : 0)
     }
   })
 
@@ -252,9 +252,9 @@ function PocketHazem({ mood, talking }: {
             <meshStandardMaterial color={SKIN} roughness={0.55} />
           </mesh>
         ))}
-        {/* short black hair: full crown cap hugging the head (no bald top, no ring) */}
-        <mesh position={[0, 0.22, -0.02]} scale={[0.96, 0.56, 1.0]}>
-          <sphereGeometry args={[0.465, 22, 22, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        {/* buzz cut: skull-hugging cap, hairline high on the forehead, dipped at the nape */}
+        <mesh position={[0, 0, -0.005]} scale={[0.96, 1.08, 0.98]} rotation={[-0.2, 0, 0]}>
+          <sphereGeometry args={[0.44, 22, 22, 0, Math.PI * 2, 0, Math.PI * 0.324]} />
           <meshStandardMaterial color={HAIR} roughness={0.85} />
         </mesh>
 
@@ -271,34 +271,41 @@ function PocketHazem({ mood, talking }: {
         {eye(-0.17, (el) => { eyeL.current = el })}
         {eye(0.17, (el) => { eyeR.current = el })}
 
-        {/* mouth assembly: lips arc + hanging jaw (teeth strip + dark cavity) */}
-        <mesh ref={mouth} position={[0, -0.12, 0.435]} rotation={[0, 0, Math.PI]}>
-          <torusGeometry args={[0.13, 0.04, 10, 24, Math.PI * 0.85]} />
-          <meshStandardMaterial color={MOUTH} roughness={0.5} />
+        {/* nose — small, center, so the face reads as a face */}
+        <mesh position={[0, -0.02, 0.44]} scale={[0.75, 1, 0.9]}>
+          <sphereGeometry args={[0.055, 12, 12]} />
+          <meshStandardMaterial color={SKIN_DK} roughness={0.55} />
         </mesh>
-        <group ref={jaw} position={[0, -0.12, 0.428]} scale={[1, 0.55, 1]}>
-          {/* upper teeth strip */}
-          <mesh position={[0, 0.022, 0.004]}>
-            <boxGeometry args={[0.15, 0.038, 0.02]} />
-            <meshStandardMaterial color={EYE_W} roughness={0.25} />
-          </mesh>
-          {/* dark cavity hanging from the teeth line */}
-          <mesh position={[0, -0.055, 0]}>
-            <sphereGeometry args={[0.078, 14, 14]} />
-            <meshStandardMaterial color="#1c0a07" roughness={0.7} />
-          </mesh>
-          {/* tongue hint */}
-          <mesh position={[0, -0.075, 0.02]}>
+        {[-0.3, 0.3].map((x, i) => (
+          <mesh key={i} position={[x, -0.09, 0.36]}>
             <sphereGeometry args={[0.045, 10, 10]} />
-            <meshStandardMaterial color="#7d3a2d" roughness={0.6} />
-          </mesh>
-        </group>
-        {[-0.26, 0.26].map((x, i) => (
-          <mesh key={i} position={[x, -0.1, 0.38]}>
-            <sphereGeometry args={[0.05, 10, 10]} />
             <meshStandardMaterial color={SKIN_DK} roughness={0.6} />
           </mesh>
         ))}
+
+        {/* mouth: readable OPENING — dark cavity stretches DOWN from the
+            teeth line while typing/laughing, so the motion is unmistakable */}
+        <mesh ref={mouth} position={[0, -0.14, 0.435]} rotation={[0, 0, Math.PI]}>
+          <torusGeometry args={[0.15, 0.035, 10, 24, Math.PI * 0.9]} />
+          <meshStandardMaterial color={MOUTH} roughness={0.5} />
+        </mesh>
+        <group ref={jaw} position={[0, -0.145, 0.425]} scale={[1, 0.4, 1]}>
+          {/* the opening itself: dark ellipse that stretches when he talks */}
+          <mesh position={[0, -0.055, -0.004]} scale={[1.35, 1, 0.7]}>
+            <sphereGeometry args={[0.085, 16, 16]} />
+            <meshStandardMaterial color="#1c0a07" roughness={0.7} />
+          </mesh>
+          {/* teeth: clipped to the TOP edge of the opening, always visible */}
+          <mesh position={[0, -0.014, 0.008]}>
+            <boxGeometry args={[0.16, 0.036, 0.018]} />
+            <meshStandardMaterial color={EYE_W} roughness={0.25} />
+          </mesh>
+          {/* tongue at the bottom */}
+          <mesh position={[0, -0.095, 0.012]} scale={[1.1, 0.6, 0.8]}>
+            <sphereGeometry args={[0.048, 10, 10]} />
+            <meshStandardMaterial color="#7d3a2d" roughness={0.6} />
+          </mesh>
+        </group>
       </group>
     </group>
   )
@@ -306,7 +313,7 @@ function PocketHazem({ mood, talking }: {
 
 /* ---------- speech: section observer + typewriter + hover chat ---------- */
 
-const SECTION_IDS = ['profile', 'revisions', 'builds', 'stack', 'spine', 'contact']
+const SECTION_IDS = ['about', 'featured', 'timeline', 'stack', 'honors', 'contact']
 
 function useSpeech(booted: boolean) {
   const [line, setLine] = useState('')
@@ -441,7 +448,7 @@ export default function Avatar({ booted }: { booted: boolean }) {
           title={profile.fullName}
           onClick={onPoke}
           role="button"
-          aria-label="Say hi to Hazem's avatar — but don't overdo it"
+          aria-label="Say hi to Hazem's avatar, but don't overdo it"
         >
           <Canvas dpr={[1, 1.5]} gl={{ antialias: true, alpha: true }} camera={{ position: [0, 1.35, 7.2], fov: 34 }}>
             <ambientLight intensity={0.55} />

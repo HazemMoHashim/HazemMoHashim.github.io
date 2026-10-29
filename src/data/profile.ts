@@ -9,25 +9,27 @@ export type Track = "hardware" | "ai-ml"
 export const profile = {
   name: "Hazem",
   surname: "Hashim",
-  fullName: "Hazem M. Hashim",
+  fullName: "Hazem Hashim",
   title: "Electronics & Communication Engineer",
-  location: "Qena, Egypt",
-  coords: "N26.16° E32.72°",
+  /** the one-line positioning statement under the name */
+  positioning: "I design the copper, and the intelligence that runs on it.",
   email: "HazemMoHashim@gmail.com",
   github: "https://github.com/HazemMoHashim",
   githubUser: "HazemMoHashim",
   linkedin: "https://www.linkedin.com/in/hazemmohashim/",
+  /** CV download — drop the file in public/cv.pdf */
+  cvUrl: "/cv.pdf",
   rev: "2026.1",
   languages: [
-    "Arabic — native",
-    "English — fluent",
-    "French — basic",
-    "German — basic",
+    "Arabic: native",
+    "English: fluent",
+    "French: basic",
+    "German: basic",
   ],
   education: {
     degree: "B.Sc. Electronics & Communication Engineering",
     school: "Qena University (formerly South Valley University)",
-    period: "2021 — 2026",
+    period: "2021–2026",
     note: "Graduation project graded Excellent",
   },
 }
@@ -52,7 +54,7 @@ export const featuredBuilds: Featured[] = [
     track: "ai-ml",
     title: "Smart University Secure Network",
     blurb:
-      "My main graduation project — and my part in it was the machine-learning core: a model that detects multiple DoS attack classes from live network traffic in real time, feeding a smart-campus architecture for traffic optimization, threat detection and intrusion prevention.",
+      "My main graduation project. My part in it was the machine-learning core: a model that detects multiple DoS attack classes from live network traffic in real time, feeding a smart-campus architecture for traffic optimization, threat detection and intrusion prevention.",
     specs: ["Real-time ML detection", "Multiple DoS classes", "Live network traffic", "2026"],
     lead: true,
   },
@@ -62,7 +64,7 @@ export const featuredBuilds: Featured[] = [
     track: "hardware",
     title: "Custom ESP32 Development Board",
     blurb:
-      "2-layer ESP32-WROOM board designed & routed in Altium Designer — power management, sensor I/O, full fab package. The same board floating at the top of this page.",
+      "2-layer ESP32-WROOM board designed & routed in Altium Designer: power management, sensor I/O, full fab package. The same board floating at the top of this page.",
     specs: ["2-layer PCB", "Altium Designer", "ESP32-WROOM", "2026"],
     withStage: true,
   },
@@ -86,9 +88,9 @@ export const builds: Build[] = [
     idx: "03",
     track: "ai-ml",
     title: "Local AI Race Engineer",
-    line: "Voice race engineer running fully local — Gemma 3 2B + Whisper reading live sim-racing telemetry.",
+    line: "Voice race engineer running fully local: Gemma 3 2B + Whisper reading live sim-racing telemetry.",
     detail:
-      "Gemma 3 2B and Whisper, both hosted locally, listening to race telemetry and my voice. It calls pace, strategy and hazards mid-stint — no cloud in the loop.",
+      "Gemma 3 2B and Whisper, both hosted locally, listening to race telemetry and my voice. It calls pace, strategy and hazards mid-stint. No cloud in the loop.",
     year: "2026",
   },
   {
@@ -96,7 +98,7 @@ export const builds: Build[] = [
     idx: "04",
     track: "hardware",
     title: "Cross-Coupled LC VCO",
-    line: "IC design contributed to a peer team's microwave-based diabetic sensor — RF power generation for the sensing mechanism.",
+    line: "IC design contributed to a peer team's microwave-based diabetic sensor: RF power generation for the sensing mechanism.",
     detail:
       "Contributed the IC design to a peer team's graduation project: a cross-coupled LC VCO generating the microwave power their non-invasive sensing mechanism relies on.",
     year: "2026",
@@ -108,7 +110,7 @@ export const builds: Build[] = [
     title: "DIY Force-Feedback Racing Simulator",
     line: "Wheelbase, wheel and pedals driven by BLDC control, encoders, and STM32/Arduino firmware.",
     detail:
-      "BLDC motors driven by STM32 firmware with encoder feedback — the wheel pushes back with forces that mean something: kerbs, weight transfer, front-axle load.",
+      "BLDC motors driven by STM32 firmware with encoder feedback. The wheel pushes back with forces that mean something: kerbs, weight transfer, front-axle load.",
     year: "2026",
   },
   {
@@ -116,7 +118,7 @@ export const builds: Build[] = [
     idx: "06",
     track: "ai-ml",
     title: "Industrial Clamp Detection",
-    line: "YOLOv11 object detection on machine-clamp footage — dataset annotated in Roboflow, trained in Colab.",
+    line: "YOLOv11 object detection on machine-clamp footage: dataset annotated in Roboflow, trained in Colab.",
     detail:
       "YOLOv11 watching machine-clamp footage; frames annotated in Roboflow, trained in Colab, tuned for a real production line's lighting.",
     year: "2026",
@@ -136,9 +138,9 @@ export const builds: Build[] = [
     idx: "08",
     track: "hardware",
     title: "Bandgap Voltage Reference",
-    line: "CMOS bandgap in Cadence Virtuoso — 0.8 V output across 1.2–3.3 V supply at 20 µW. IEEE SSCS Egypt.",
+    line: "CMOS bandgap in Cadence Virtuoso: 0.8 V output across 1.2–3.3 V supply at 20 µW. IEEE SSCS Egypt.",
     detail:
-      "A CMOS bandgap reference in Cadence Virtuoso: 0.8 V output from a 1.2–3.3 V supply at 20 µW — designed for the IEEE SSCS Egypt competition.",
+      "A CMOS bandgap reference in Cadence Virtuoso: 0.8 V output from a 1.2–3.3 V supply at 20 µW, designed for the IEEE SSCS Egypt competition.",
     year: "2025",
   },
   {
@@ -146,7 +148,7 @@ export const builds: Build[] = [
     idx: "09",
     track: "hardware",
     title: "Switched-Capacitor DC-DC Converter",
-    line: "Fully integrated SC converter in 0.18 µm CMOS — 74% doubler / 77% buck efficiency.",
+    line: "Fully integrated SC converter in 0.18 µm CMOS: 74% doubler / 77% buck efficiency.",
     detail:
       "A fully-integrated switched-capacitor converter in 0.18 µm CMOS: 74% efficiency as a doubler, 77% as a buck.",
     year: "2025",
@@ -163,86 +165,83 @@ export const builds: Build[] = [
   },
 ]
 
-/* ---------- revision history (education + training + roles) ---------- */
+/* ---------- timeline: education / training / roles (separated) ---------- */
 
-export interface RevRow {
+export interface TimelineRow {
   years: string
   what: string
   who: string
-  tag: "edu" | "training" | "team" | "ml"
   note?: string
+  /** badge chip */
+  chip?: string
 }
 
-export const revisions: RevRow[] = [
+export const timelineEducation: TimelineRow[] = [
   {
-    years: "2021 — 2026",
+    years: "2021–2026",
     what: "B.Sc. Electronics & Communication Engineering",
     who: "Qena University (formerly South Valley University)",
-    tag: "edu",
-    note: "Graduation project: Excellent",
+    chip: "Graduation project graded Excellent",
   },
-  {
-    years: "2021 — 2026",
-    what: "Electrical Technical Head",
-    who: "IEEE SVU Student Branch",
-    tag: "team",
-    note: "Workshops & mentoring — electronics, programming, robotics",
-  },
-  {
-    years: "2022 — 2026",
-    what: "Powertrain Subsystem Head",
-    who: "SVU Racing Team",
-    tag: "team",
-    note: "Led the EV electrical architecture across two EVER V competition cycles",
-  },
+]
+
+export const timelineTraining: TimelineRow[] = [
   {
     years: "2023",
     what: "EGTA Winter Training Program",
     who: "Siemens Energy",
-    tag: "training",
-    note: "Industrial automation, PLCs, SCADA control architectures",
+    chip: "Industrial automation · PLCs · SCADA",
   },
   {
     years: "2023",
     what: "HCIA-AI Certification",
     who: "Huawei ICT Academy",
-    tag: "ml",
-    note: "ML algorithms, deep-learning architectures, TensorFlow",
+    chip: "ML algorithms · Deep learning · TensorFlow",
   },
   {
     years: "2024",
     what: "PCB Design Training Program",
     who: "CREATIVA Qena",
-    tag: "training",
-    note: "Schematic design, layout routing, board fabrication",
+    chip: "Schematic · Layout · Fabrication",
   },
   {
     years: "2025",
     what: "Analog IC Design Training Program",
     who: "Information Technology Institute (ITI)",
-    tag: "training",
-    note: "CMOS analog building blocks in Cadence Virtuoso",
+    chip: "CMOS analog blocks · Cadence Virtuoso",
   },
   {
     years: "2025",
     what: "Digital IC Design using FPGA",
     who: "National Telecommunication Institute (NTI)",
-    tag: "training",
-    note: "FPGA-based digital systems & hardware architectures in Verilog",
+    chip: "FPGA · Verilog · Digital hardware",
   },
   {
     years: "2026",
     what: "Generative AI & Deep Learning Track",
     who: "ITI × NVIDIA DLI",
-    tag: "ml",
-    note: "Neural networks, transformers, PyTorch, TensorRT",
+    chip: "Transformers · PyTorch · TensorRT",
   },
   {
     years: "2026",
     what: "Build with AI: Masr Edition",
     who: "Google",
-    tag: "ml",
-    note: "Modern AI tools, APIs and real-world implementations",
+    chip: "AI tools · APIs · Real-world implementations",
+  },
+]
+
+export const timelineRoles: TimelineRow[] = [
+  {
+    years: "2022–2026",
+    what: "Powertrain Subsystem Head",
+    who: "SVU Racing Team, Qena",
+    chip: "EV powertrain · Low-voltage architecture · Two EVER V cycles",
+  },
+  {
+    years: "2021–2026",
+    what: "Electrical Technical Head",
+    who: "IEEE SVU Student Branch, Qena",
+    chip: "Workshops and mentoring in electronics, programming, robotics",
   },
 ]
 
@@ -290,12 +289,12 @@ export interface Honor {
 }
 
 export const honors: Honor[] = [
-  { year: "2024", what: "Best Design Award — ERIL Robotics Competition" },
-  { year: "2025", what: "Participant — IEEE SSCS Egypt Competition" },
-  { year: "2024", what: "Participant — Electric Vehicle Rally" },
-  { year: "2024", what: "Participant — Hack4Tech Hackathon" },
-  { year: "2022", what: "Best Design Award — UEA6 Robotics Competition" },
-  { year: "2019", what: "Best Teamwork Award — IEEE SVU SB Robotics Competition" },
+  { year: "2024", what: "Best Design Award, ERIL Robotics Competition" },
+  { year: "2025", what: "Participant, IEEE SSCS Egypt Competition" },
+  { year: "2024", what: "Participant, Electric Vehicle Rally" },
+  { year: "2024", what: "Participant, Hack4Tech Hackathon" },
+  { year: "2022", what: "Best Design Award, UEA6 Robotics Competition" },
+  { year: "2019", what: "Best Teamwork Award, IEEE SVU SB Robotics Competition" },
 ]
 
 /* ---------- marquee ---------- */
@@ -303,7 +302,7 @@ export const honors: Honor[] = [
 export const marqueeItems = [
   "PCB Design",
   "Embedded C/C++",
-  "Analog IC — Cadence",
+  "Analog IC in Cadence",
   "FPGA / Verilog",
   "EV Powertrain",
   "Computer Vision",
@@ -318,45 +317,78 @@ export const marqueeItems = [
 
 export const avatarScript: Record<string, string> = {
   greet:
-    "Hey, welcome in! I'm Hazem — the pocket-sized version. I build electronics and the AI that runs on them. Scroll down, I'll walk you through everything!",
+    "Hey, welcome in! I'm Hazem, the pocket-sized version. I build electronics and the AI that runs on them. This is my portfolio.",
   poke:
-    "Haha, hi again! Poking the avatar, bold move. I like the energy. Keep scrolling — the cool stuff is below!",
-  profile:
-    "This is me on paper! B.Sc. from Qena University, class of 2026 — and the graduation project came out with an Excellent. I only mention it constantly.",
-  revisions:
-    "The changelog of me! EV powertrain team, IC design workshops, training courses — every role here got me soldered a little tighter.",
-  builds:
-    "My favorite part — click any row and it comes ALIVE in 3D! Go on, try the bandgap. 0.8 volts of pure pride.",
+    "Haha, hi again! Poking the avatar, bold move. I like the energy. Keep scrolling, the cool stuff is below!",
+  about:
+    "This is me on paper! B.Sc. from Qena University, class of 2026, and the graduation project came out with an Excellent. I only mention it constantly.",
+  featured:
+    "The headliners! My favorite builds, picked and polished. Tap one and I'll walk you through the full story.",
+  timeline:
+    "The changelog of me! EV powertrain team, IC design workshops, training courses. Every role here got me soldered a little tighter.",
+  projects:
+    "My favorite part, projects come ALIVE in 3D here! Go on, try the bandgap. 0.8 volts of pure pride.",
   stack:
-    "The toolbox! No skill bars here — a '90% in Altium' means nothing. What counts is what I've actually shipped with each of these.",
-  spine:
-    "The honors shelf! Best Teamwork at the IEEE robotics competition — fitting, honestly, because everything on this page was a team sport.",
+    "The toolbox! No skill bars here. A '90% in Altium' means nothing. What counts is what I've actually shipped with each of these.",
+  honors:
+    "The honors shelf! Best Teamwork at the IEEE robotics competition, fitting, honestly, because everything on this page was a team sport.",
   contact:
-    "You made it all the way down — I like your style! The email copies on click. Or catch me on GitHub and LinkedIn. Talk soon!",
+    "You made it all the way down, I like your style! The email copies on click. Or catch me on GitHub and LinkedIn. Talk soon!",
   jarvisPoke:
-    "Whoa — you found the secret knock! Respect. That name means a lot to me; this whole site is built in its spirit.",
+    "Whoa, you found the secret knock! Respect. That name means a lot to me; this whole site is built in its spirit.",
+}
+
+/* ---------- avatar guide: pages beyond the homepage ---------- */
+
+/* fired once when the /projects archive loads */
+export const archiveGreet =
+  "Welcome to the full archive! Everything I've built lives here, sorted by track. Scroll on, there's plenty to see."
+
+/* fired when a track group scrolls into view on the archive */
+export const trackChat: Record<string, string> = {
+  hardware:
+    "The copper section! Boards, silicon, and one very stubborn electric car. My natural habitat.",
+  "ai-ml":
+    "The smart stuff! Models that see, listen and catch hackers. Watch the graduation project, it's the team's pride.",
+}
+
+/* fired once when a case study loads ({title} gets filled in) */
+export const caseGreet = (title: string) =>
+  `Ooh, you picked ${title}! Great taste. The full story is right here, scroll with me.`
+
+/* fired as each case-study section scrolls into view, keyed by subhead */
+export const caseChat: Record<string, string> = {
+  OVERVIEW: "The short version first, then we dig in.",
+  'THE PROBLEM': "Every project starts with an itch. Here's the one worth scratching.",
+  'MY CONTRIBUTION': "The honest bit: what was mine to do, and what belonged to the team.",
+  'SYSTEM / ARCHITECTURE': "Under the hood. How the pieces talk to each other.",
+  'TECHNICAL IMPLEMENTATION': "The build itself. This is where theory gets hands.",
+  'GALLERY / DIAGRAMS': "The visual tour! Zoom in, stay a while.",
+  RESULTS: "Receipts. Numbers and things that actually worked.",
+  TECHNOLOGIES: "The toolbox for this one.",
+  'LESSONS LEARNED': "What I'd do differently. Always worth writing down.",
 }
 
 /* hover chat — short, punchy, per build (fires when the pointer lands on a row) */
 export const buildChat: Record<string, string> = {
   "grad-ml":
-    "My main grad project! I built the ML core — a model reading live network traffic and catching DoS attacks in real time. The team built the campus; I gave it reflexes.",
+    "My main grad project! I built the ML core, a model reading live network traffic and catching DoS attacks in real time. The team built the campus; I gave it reflexes.",
   "esp32-board":
-    "This board! Every trace routed by hand in Altium — 2 layers, ESP32-WROOM, full fab package. Same board as the big one up top. Same pride.",
+    "This board! Every trace routed by hand in Altium: 2 layers, ESP32-WROOM, full fab package. Same board as the big one up top. Same pride.",
   "race-engineer":
-    "My race engineer! Gemma 3 + Whisper, running 100% local — it reads telemetry and calls strategy at me mid-stint. No cloud, no lag, no excuses.",
+    "My race engineer! Gemma 3 + Whisper, running 100% local. It reads telemetry and calls strategy at me mid-stint. No cloud, no lag, no excuses.",
   vco:
-    "Honesty corner: the sensor was another team's project — I designed the LC VCO that powered it. Small part, proud part.",
+    "Honesty corner: the sensor was another team's project. I designed the LC VCO that powered it. Small part, proud part.",
   "ffb-sim":
-    "My rig! BLDC motors, STM32 firmware, encoder feedback — I feel every kerb through this wheel. Hardware that talks back.",
+    "My rig! BLDC motors, STM32 firmware, encoder feedback. I feel every kerb through this wheel. Hardware that talks back.",
   "clamp-detect":
     "YOLOv11 watching factory clamps! Dataset annotated in Roboflow, trained in Colab, tuned for real production-line lighting.",
   "ever-v":
-    "EVER V! I was powertrain subsystem head — the whole EV drivetrain and low-voltage architecture, designed and integrated by yours truly.",
+    "EVER V! I was powertrain subsystem head: the whole EV drivetrain and low-voltage architecture, designed and integrated by yours truly.",
   bandgap:
-    "THE BANDGAP! 0.8 V steady from a 1.2–3.3 V supply at just 20 µW — Cadence Virtuoso, IEEE SSCS Egypt. First design I didn't have to apologize for!",
+    "THE BANDGAP! 0.8 V steady from a 1.2–3.3 V supply at just 20 µW, Cadence Virtuoso, IEEE SSCS Egypt. First design I didn't have to apologize for!",
   "sc-dcdc":
-    "Switched-cap converter in 0.18 µm CMOS — 74% as a doubler, 77% as a buck. Efficiency you can measure, not vibes.",
+    "Switched-cap converter in 0.18 µm CMOS: 74% as a doubler, 77% as a buck. Efficiency you can measure, not vibes.",
   "sea-waste":
     "Hack4Tech! A marine-debris classifier running real-time on an embedded robot. The ocean said thanks.",
 }
@@ -365,7 +397,7 @@ export const buildChat: Record<string, string> = {
 
 export const giggleLines: string[] = [
   "Haha! Hey, that tickles!",
-  "Hehe — okay, okay, I'm ticklish in all my vertices!",
+  "Hehe, okay, okay, I'm ticklish in all my vertices!",
   "Hahaha! Do that again and I'm charging by the giggle.",
   "Hehehe, stop it! I'm trying to look professional here!",
 ]
