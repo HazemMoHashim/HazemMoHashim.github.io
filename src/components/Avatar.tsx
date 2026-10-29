@@ -293,13 +293,17 @@ function PocketHazem({ mood, talking }: {
 
       {/* left arm: bent forward, fist at the chest holding the katana */}
       <group ref={armL} position={[-0.46, 1.2, 0]} rotation={[-0.55, 0, 0.5]}>
+        <mesh>
+          <sphereGeometry args={[0.115, 12, 12]} />
+          <meshStandardMaterial map={plaid} roughness={0.85} />
+        </mesh>
         <mesh position={[0, -0.3, 0]} rotation={[0, 0, 0.1]}>
-          <capsuleGeometry args={[0.095, 0.42, 4, 10]} />
+          <capsuleGeometry args={[0.107, 0.4, 4, 10]} />
           <meshStandardMaterial map={plaid} roughness={0.85} />
         </mesh>
         {/* cuff */}
         <mesh position={[0.01, -0.56, 0]}>
-          <cylinderGeometry args={[0.1, 0.1, 0.06, 12]} />
+          <cylinderGeometry args={[0.108, 0.108, 0.06, 12]} />
           <meshStandardMaterial map={plaid} roughness={0.85} />
         </mesh>
         {/* fist */}
@@ -347,16 +351,21 @@ function PocketHazem({ mood, talking }: {
 
       {/* right arm: free to wave */}
       <group ref={armR} position={[0.46, 1.2, 0]}>
+        {/* shoulder cap so the arm reads as attached, not a stick */}
+        <mesh>
+          <sphereGeometry args={[0.115, 12, 12]} />
+          <meshStandardMaterial map={plaid} roughness={0.85} />
+        </mesh>
         <mesh position={[-0.05, -0.3, 0]} rotation={[0, 0, -0.2]}>
-          <capsuleGeometry args={[0.095, 0.42, 4, 10]} />
+          <capsuleGeometry args={[0.107, 0.4, 4, 10]} />
           <meshStandardMaterial map={plaid} roughness={0.85} />
         </mesh>
         <mesh position={[-0.06, -0.56, 0]}>
-          <cylinderGeometry args={[0.1, 0.1, 0.06, 12]} />
+          <cylinderGeometry args={[0.108, 0.108, 0.06, 12]} />
           <meshStandardMaterial map={plaid} roughness={0.85} />
         </mesh>
         <mesh position={[-0.11, -0.63, 0]}>
-          <sphereGeometry args={[0.095, 12, 12]} />
+          <sphereGeometry args={[0.1, 12, 12]} />
           <meshStandardMaterial color={SKIN} roughness={0.85} />
         </mesh>
       </group>
