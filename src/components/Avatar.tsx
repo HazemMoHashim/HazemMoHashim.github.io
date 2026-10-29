@@ -1,36 +1,76 @@
 /* ============================================================
-   Avatar.tsx — "pocket Hazem" (v4.1: alive).
-   Cartoon figure: warm dark skin, short black hair (full cap),
-   big smile that JABBERS while typing, white cursor-tracking
-   eyes, cobalt shirt. Moods: idle bounce / wave-on-hi / giggle
-   when clicked / ANGRY if poked too much. Animated mouth with
-   teeth. No audio.
+   Avatar.tsx — "pocket Hazem" (v5: 3D replica of the 2D ref).
+   Buzz cut with a sharp line-up, big ears, thick brows, large
+   oval eyes, wide nose, teal plaid flannel over a white tee,
+   katana held across the chest. Happy default: grin, raised
+   brows, cursor-tracking eyes. Moods: idle bounce / wave-on-hi /
+   giggle when clicked / ANGRY if poked too much. Animated mouth
+   with teeth. No audio.
    ============================================================ */
 
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { avatarScript, giggleLines, angryLines, profile } from '../data/profile'
 import { mouse } from '../lib/mouse'
 
-const SKIN = '#8a5a3a'
-const SKIN_DK = '#6b4429'
+const SKIN = '#a06a45'
+const SKIN_DK = '#7d5132'
 const HAIR = '#0d0c0b'
-const SHIRT = '#3567d6'
-const SHIRT_DK = '#2650ab'
+const SHIRT = '#3d7b87'
+const SHIRT_DK = '#2a5a64'
+const PLAID_LIGHT = '#e6ddca'
+const TEE = '#f2ede3'
+const BAND = '#16191c'
 const PANTS = '#252b30'
 const SHOE = '#e8e2d6'
-const EYE_W = '#f4efe6'
-const PUPIL = '#1b120b'
+const EYE_W = '#f7f3ea'
+const PUPIL = '#120e0a'
 const MOUTH = '#3a160f'
 const COPPER = '#c47a3d'
 const HOLO = '#7fa8d8'
+const STEEL = '#e6edf0'
+const GOLD = '#c9a24a'
+const RED_WRAP = '#b5352c'
+const MOUTH_Y = -0.15
 
 const REDUCED =
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const CHAR_MS = 17
 
 type Mood = { mode: 'idle' | 'giggle' | 'angry'; until: number; now: number; waveUntil: number }
+
+/* teal flannel plaid, painted once into a canvas texture */
+function makePlaid() {
+  const c = document.createElement('canvas')
+  c.width = c.height = 256
+  const g = c.getContext('2d')!
+  g.fillStyle = SHIRT
+  g.fillRect(0, 0, 256, 256)
+  // wide cream bands (both directions) — soft, so it reads as flannel
+  g.fillStyle = 'rgba(230,221,202,0.26)'
+  for (let i = 0; i < 256; i += 64) {
+    g.fillRect(i, 0, 22, 256)
+    g.fillRect(0, i, 256, 22)
+  }
+  // dark teal bands offset from the cream
+  g.fillStyle = 'rgba(26,46,52,0.4)'
+  for (let i = 40; i < 256; i += 64) {
+    g.fillRect(i, 0, 10, 256)
+    g.fillRect(0, i, 256, 10)
+  }
+  // thin near-black lines
+  g.fillStyle = 'rgba(9,15,17,0.28)'
+  for (let i = 10; i < 256; i += 32) {
+    g.fillRect(i, 0, 2, 256)
+    g.fillRect(0, i, 256, 2)
+  }
+  const tex = new THREE.CanvasTexture(c)
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+  tex.repeat.set(2.4, 2.4)
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
 
 /* ---------- the figure ---------- */
 function PocketHazem({ mood, talking }: {
@@ -49,6 +89,7 @@ function PocketHazem({ mood, talking }: {
   const jaw = useRef<THREE.Group>(null)
   const blinkT = useRef(2.2)
   const blinking = useRef(0)
+  const plaid = useMemo(() => makePlaid(), [])
 
   useFrame((state, delta) => {
     const d = Math.min(delta, 0.05)
@@ -87,15 +128,17 @@ function PocketHazem({ mood, talking }: {
 
     // arms: woo bursts in idle, continuous high wave on "hi", crossed-ish + jab when angry
     if (armR.current) {
-      let target = -2.5 - (Math.sin(t * 3.4) > 0.85 ? 0.9 : 0)
-      if (waving && !angry) target = -2.9 + Math.sin(t * 9) * 0.45
-      if (angry) target = -0.35 // arm dropped, hand on hip-ish
+      // +z raises the right arm out to his side; negative would swing it across the face
+      let target = 0.12 + (Math.sin(t * 3.4) > 0.85 ? 1.15 : 0)
+      if (waving && !angry) target = 2.35 + Math.sin(t * 9) * 0.28
+      if (angry) target = -0.3 // arm dropped, hand on hip-ish
       armR.current.rotation.z = THREE.MathUtils.damp(armR.current.rotation.z, target, waving ? 9 : 7, d)
     }
     if (armL.current && !REDUCED) {
-      const woo = !angry && Math.sin(t * 3.4) > 0.85 ? 0.9 : 0
-      const target = angry ? 0.35 : woo
-      armL.current.rotation.x = angry ? 0 : Math.sin(t * 3.4) * 0.3
+      const woo = !angry && Math.sin(t * 3.4) > 0.85 ? 0.14 : 0
+      const target = angry ? 0.35 : 0.5 + woo
+      // held out in front so the blade crosses the chest; only a slight sway
+      armL.current.rotation.x = angry ? -0.15 : -0.55 + Math.sin(t * 1.7) * 0.04
       armL.current.rotation.z = THREE.MathUtils.damp(armL.current.rotation.z, target, 7, d)
     }
 
@@ -122,37 +165,43 @@ function PocketHazem({ mood, talking }: {
       if (e) e.scale.y = THREE.MathUtils.damp(e.scale.y, lid, 24, d)
     }
 
-    // brows: raised-happy by default, INNER-DOWN scowl when angry
-    const browT = angry ? 0.32 : -0.14
+    // brows: flat and relaxed by default, INNER-DOWN scowl when angry
+    const browT = angry ? 0.32 : 0
     if (browL.current) browL.current.rotation.z = THREE.MathUtils.damp(browL.current.rotation.z, -browT, 8, d)
     if (browR.current) browR.current.rotation.z = THREE.MathUtils.damp(browR.current.rotation.z, browT, 8, d)
 
     // mouth: smile by default, frown when angry, JAW swings while typing,
     // laughs wide open (teeth on display) when tickled
     if (mouth.current) {
-      const targetRot = angry ? 0 : Math.PI // 0 = frown arc, π = smile arc
-      mouth.current.rotation.z = THREE.MathUtils.damp(mouth.current.rotation.z, targetRot, 10, d)
-      mouth.current.scale.x = THREE.MathUtils.damp(mouth.current.scale.x, angry ? 0.85 : giggle ? 1.2 : 1, 12, d)
+      mouth.current.scale.x = THREE.MathUtils.damp(mouth.current.scale.x, angry ? 0.8 : giggle ? 1.15 : 1, 12, d)
+      mouth.current.scale.y = THREE.MathUtils.damp(mouth.current.scale.y, angry ? 0.55 : 1, 12, d)
     }
     if (jaw.current) {
-      let open = 0.35 // idle: closed grin, just the lips arc + teeth peek
-      if (angry) open = 0.12 // gritted
-      else if (giggle) open = 1.8 + Math.sin(t * 11) * 0.3 // big laugh, fluttering
-      else if (talking) open = 0.5 + Math.abs(Math.sin(t * 13)) * 1.1 // jabber — big, readable swings
+      let open = 0.9 // idle: open happy grin, teeth showing
+      if (angry) open = 0.3 // gritted
+      else if (giggle) open = 1.4 + Math.sin(t * 11) * 0.15 // big laugh, fluttering
+      else if (talking) open = 0.9 + Math.abs(Math.sin(t * 13)) * 0.55 // jabber — readable swings
       jaw.current.scale.y = THREE.MathUtils.damp(jaw.current.scale.y, open, 18, d)
-      jaw.current.position.y = (giggle ? Math.sin(t * 11) * 0.014 : 0)
+      jaw.current.position.y = MOUTH_Y + (giggle ? Math.sin(t * 11) * 0.014 : 0)
     }
   })
 
   const eye = (x: number, refCb: (el: THREE.Group | null) => void) => (
     <group ref={refCb} position={[x, 0.06, 0.4]} userData={{ baseX: x, baseY: 0.06 }}>
-      <mesh>
-        <sphereGeometry args={[0.085, 14, 14]} />
-        <meshStandardMaterial color={EYE_W} roughness={0.25} />
+      {/* big oval sclera */}
+      <mesh scale={[1, 0.82, 0.5]}>
+        <sphereGeometry args={[0.105, 16, 16]} />
+        <meshStandardMaterial color={EYE_W} roughness={0.22} />
       </mesh>
-      <mesh position={[0, 0, 0.065]}>
-        <sphereGeometry args={[0.042, 12, 12]} />
-        <meshStandardMaterial color={PUPIL} roughness={0.3} />
+      {/* iris: nearly fills the eye, like the reference */}
+      <mesh position={[0, 0, 0.045]} scale={[1, 1, 0.55]}>
+        <sphereGeometry args={[0.062, 14, 14]} />
+        <meshStandardMaterial color={PUPIL} roughness={0.25} />
+      </mesh>
+      {/* catch-light */}
+      <mesh position={[0.022, 0.028, 0.085]}>
+        <sphereGeometry args={[0.014, 8, 8]} />
+        <meshStandardMaterial color="#ffffff" roughness={0.1} />
       </mesh>
     </group>
   )
@@ -191,47 +240,124 @@ function PocketHazem({ mood, talking }: {
         </group>
       ))}
 
-      {/* torso: cobalt tee, tapered */}
+      {/* torso: teal plaid flannel, open down the front over a white tee */}
       <mesh position={[0, 1.0, 0]}>
-        <cylinderGeometry args={[0.36, 0.28, 0.68, 16]} />
-        <meshStandardMaterial color={SHIRT} roughness={0.65} />
+        <cylinderGeometry args={[0.36, 0.28, 0.68, 24, 1, true, Math.PI * 0.09, Math.PI * 1.82]} />
+        <meshStandardMaterial map={plaid} roughness={0.85} side={THREE.DoubleSide} />
       </mesh>
-      {[-0.36, 0.36].map((x, i) => (
-        <mesh key={i} position={[x, 1.26, 0]}>
-          <sphereGeometry args={[0.14, 12, 12]} />
-          <meshStandardMaterial color={SHIRT} roughness={0.65} />
+      {/* white tee under the open flannel */}
+      <mesh position={[0, 1.0, 0]}>
+        <cylinderGeometry args={[0.335, 0.262, 0.68, 20, 1, true]} />
+        <meshStandardMaterial color={TEE} roughness={0.75} side={THREE.DoubleSide} />
+      </mesh>
+      {/* black chest band on the tee */}
+      <mesh position={[0, 1.02, 0.306]}>
+        <boxGeometry args={[0.11, 0.05, 0.012]} />
+        <meshStandardMaterial color={BAND} roughness={0.6} />
+      </mesh>
+      {/* tee collar around the neck */}
+      <mesh position={[0, 1.37, 0.02]} rotation={[-0.2, 0, 0]}>
+        <torusGeometry args={[0.135, 0.022, 8, 20]} />
+        <meshStandardMaterial color={TEE} roughness={0.7} />
+      </mesh>
+      {/* flannel lapels folded open along the gap */}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[s * 0.115, 1.12, 0.328]} rotation={[-0.1, -s * 0.45, -s * 0.06]}>
+          <boxGeometry args={[0.07, 0.4, 0.025]} />
+          <meshStandardMaterial map={plaid} roughness={0.85} />
         </mesh>
       ))}
-      <mesh position={[0, 1.32, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.14, 0.026, 8, 20]} />
-        <meshStandardMaterial color={SHIRT_DK} roughness={0.6} />
+      {/* flannel collar flaps */}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[s * 0.16, 1.3, 0.3]} rotation={[-0.12, -s * 0.5, -s * 0.42]}>
+          <boxGeometry args={[0.14, 0.2, 0.03]} />
+          <meshStandardMaterial map={plaid} roughness={0.85} />
+        </mesh>
+      ))}
+      {/* shoulders */}
+      {[-0.36, 0.36].map((x, i) => (
+        <mesh key={i} position={[x, 1.26, 0]}>
+          <sphereGeometry args={[0.15, 12, 12]} />
+          <meshStandardMaterial map={plaid} roughness={0.85} />
+        </mesh>
+      ))}
+      {/* neck */}
+      <mesh position={[0, 1.36, 0]}>
+        <cylinderGeometry args={[0.11, 0.12, 0.18, 12]} />
+        <meshStandardMaterial color={SKIN} roughness={0.85} />
       </mesh>
       <mesh position={[0, 0.67, 0]}>
         <cylinderGeometry args={[0.29, 0.29, 0.05, 16]} />
         <meshStandardMaterial color={SHIRT_DK} roughness={0.6} />
       </mesh>
 
-      {/* left arm */}
-      <group ref={armL} position={[-0.46, 1.2, 0]}>
+      {/* left arm: bent forward, fist at the chest holding the katana */}
+      <group ref={armL} position={[-0.46, 1.2, 0]} rotation={[-0.55, 0, 0.5]}>
         <mesh position={[0, -0.3, 0]} rotation={[0, 0, 0.1]}>
-          <capsuleGeometry args={[0.09, 0.42, 4, 10]} />
-          <meshStandardMaterial color={SHIRT} roughness={0.65} />
+          <capsuleGeometry args={[0.095, 0.42, 4, 10]} />
+          <meshStandardMaterial map={plaid} roughness={0.85} />
         </mesh>
-        <mesh position={[0.02, -0.62, 0]}>
-          <sphereGeometry args={[0.09, 12, 12]} />
-          <meshStandardMaterial color={SKIN} roughness={0.55} />
+        {/* cuff */}
+        <mesh position={[0.01, -0.56, 0]}>
+          <cylinderGeometry args={[0.1, 0.1, 0.06, 12]} />
+          <meshStandardMaterial map={plaid} roughness={0.85} />
         </mesh>
+        {/* fist */}
+        <mesh position={[0.02, -0.63, 0.02]}>
+          <sphereGeometry args={[0.1, 12, 12]} />
+          <meshStandardMaterial color={SKIN} roughness={0.85} />
+        </mesh>
+
+        {/* katana: red-wrapped handle in the fist, steel blade across the chest */}
+        <group position={[0.02, -0.63, 0.08]} rotation={[0.9, 0, -1.25]}>
+          {/* handle */}
+          <mesh position={[0, -0.06, 0]}>
+            <cylinderGeometry args={[0.048, 0.052, 0.36, 12]} />
+            <meshStandardMaterial color={RED_WRAP} roughness={0.55} />
+          </mesh>
+          {/* diamond wrap */}
+          {[-0.17, -0.05, 0.07].map((y) => (
+            <mesh key={y} position={[0, y, 0.046]} rotation={[0, 0, Math.PI / 4]}>
+              <boxGeometry args={[0.05, 0.05, 0.012]} />
+              <meshStandardMaterial color={PLAID_LIGHT} roughness={0.5} />
+            </mesh>
+          ))}
+          {/* pommel */}
+          <mesh position={[0, -0.255, 0]}>
+            <cylinderGeometry args={[0.05, 0.05, 0.03, 12]} />
+            <meshStandardMaterial color={GOLD} metalness={0.4} roughness={0.4} />
+          </mesh>
+          {/* tsuba */}
+          <mesh position={[0, 0.145, 0]}>
+            <cylinderGeometry args={[0.105, 0.105, 0.022, 20]} />
+            <meshStandardMaterial color={GOLD} metalness={0.45} roughness={0.35} />
+          </mesh>
+          {/* blade */}
+          <mesh position={[0, 0.5, 0]}>
+            <boxGeometry args={[0.056, 0.72, 0.015]} />
+            <meshStandardMaterial color={STEEL} metalness={0.35} roughness={0.28} />
+          </mesh>
+          {/* tip */}
+          <mesh position={[0, 0.875, 0]} rotation={[0, 0, Math.PI / 4]}>
+            <boxGeometry args={[0.04, 0.04, 0.015]} />
+            <meshStandardMaterial color={STEEL} metalness={0.35} roughness={0.28} />
+          </mesh>
+        </group>
       </group>
 
-      {/* right arm */}
+      {/* right arm: free to wave */}
       <group ref={armR} position={[0.46, 1.2, 0]}>
         <mesh position={[-0.05, -0.3, 0]} rotation={[0, 0, -0.2]}>
-          <capsuleGeometry args={[0.09, 0.42, 4, 10]} />
-          <meshStandardMaterial color={SHIRT} roughness={0.65} />
+          <capsuleGeometry args={[0.095, 0.42, 4, 10]} />
+          <meshStandardMaterial map={plaid} roughness={0.85} />
         </mesh>
-        <mesh position={[-0.11, -0.62, 0]}>
-          <sphereGeometry args={[0.09, 12, 12]} />
-          <meshStandardMaterial color={SKIN} roughness={0.55} />
+        <mesh position={[-0.06, -0.56, 0]}>
+          <cylinderGeometry args={[0.1, 0.1, 0.06, 12]} />
+          <meshStandardMaterial map={plaid} roughness={0.85} />
+        </mesh>
+        <mesh position={[-0.11, -0.63, 0]}>
+          <sphereGeometry args={[0.095, 12, 12]} />
+          <meshStandardMaterial color={SKIN} roughness={0.85} />
         </mesh>
       </group>
 
@@ -243,66 +369,71 @@ function PocketHazem({ mood, talking }: {
         </mesh>
         <mesh scale={[0.92, 1.04, 0.94]}>
           <sphereGeometry args={[0.44, 24, 24]} />
-          <meshStandardMaterial color={SKIN} roughness={0.55} />
+          <meshStandardMaterial color={SKIN} roughness={0.85} />
         </mesh>
-        {/* ears */}
-        {[-0.42, 0.42].map((x, i) => (
-          <mesh key={i} position={[x, -0.02, 0]} scale={[0.55, 1, 0.9]}>
-            <sphereGeometry args={[0.09, 10, 10]} />
-            <meshStandardMaterial color={SKIN} roughness={0.55} />
-          </mesh>
+        {/* big ears, like the reference */}
+        {[-0.425, 0.425].map((x, i) => (
+          <group key={i}>
+            <mesh position={[x, -0.03, 0]} scale={[0.62, 1.12, 0.82]}>
+              <sphereGeometry args={[0.105, 12, 12]} />
+              <meshStandardMaterial color={SKIN} roughness={0.85} />
+            </mesh>
+            <mesh position={[x + (i === 0 ? 0.028 : -0.028), -0.03, 0.03]} scale={[0.3, 0.62, 0.42]}>
+              <sphereGeometry args={[0.07, 10, 10]} />
+              <meshStandardMaterial color={SKIN_DK} roughness={0.6} />
+            </mesh>
+          </group>
         ))}
-        {/* buzz cut: skull-hugging cap, hairline high on the forehead, dipped at the nape */}
-        <mesh position={[0, 0, -0.005]} scale={[0.96, 1.08, 0.98]} rotation={[-0.2, 0, 0]}>
-          <sphereGeometry args={[0.44, 22, 22, 0, Math.PI * 2, 0, Math.PI * 0.324]} />
-          <meshStandardMaterial color={HAIR} roughness={0.85} />
+        {/* buzz cut: a thin shell hugging the skull, with a sharp line-up edge */}
+        <mesh scale={[0.932, 1.055, 0.952]}>
+          <sphereGeometry args={[0.44, 24, 24, 0, Math.PI * 2, 0, Math.PI * 0.33]} />
+          <meshStandardMaterial color={HAIR} roughness={0.9} />
         </mesh>
 
-        {/* eyebrows — raised-happy default, scowl on anger */}
-        <mesh ref={browL} position={[-0.17, 0.17, 0.4]} rotation={[0, 0, -0.14]}>
-          <boxGeometry args={[0.14, 0.032, 0.05]} />
+        {/* thick eyebrows, flat and relaxed by default, inner-down scowl on anger */}
+        <mesh ref={browL} position={[-0.185, 0.178, 0.4]}>
+          <boxGeometry args={[0.18, 0.05, 0.05]} />
           <meshStandardMaterial color={HAIR} roughness={0.8} />
         </mesh>
-        <mesh ref={browR} position={[0.17, 0.17, 0.4]} rotation={[0, 0, 0.14]}>
-          <boxGeometry args={[0.14, 0.032, 0.05]} />
+        <mesh ref={browR} position={[0.185, 0.178, 0.4]}>
+          <boxGeometry args={[0.18, 0.05, 0.05]} />
           <meshStandardMaterial color={HAIR} roughness={0.8} />
         </mesh>
 
-        {eye(-0.17, (el) => { eyeL.current = el })}
-        {eye(0.17, (el) => { eyeR.current = el })}
+        {eye(-0.185, (el) => { eyeL.current = el })}
+        {eye(0.185, (el) => { eyeR.current = el })}
 
-        {/* nose — small, center, so the face reads as a face */}
-        <mesh position={[0, -0.02, 0.44]} scale={[0.75, 1, 0.9]}>
-          <sphereGeometry args={[0.055, 12, 12]} />
-          <meshStandardMaterial color={SKIN_DK} roughness={0.55} />
+        {/* wide flat nose with visible nostrils */}
+        <mesh position={[0, -0.025, 0.418]} scale={[1.5, 0.7, 0.45]}>
+          <sphereGeometry args={[0.062, 14, 14]} />
+          <meshStandardMaterial color={SKIN} roughness={0.85} />
         </mesh>
-        {[-0.3, 0.3].map((x, i) => (
-          <mesh key={i} position={[x, -0.09, 0.36]}>
-            <sphereGeometry args={[0.045, 10, 10]} />
-            <meshStandardMaterial color={SKIN_DK} roughness={0.6} />
+        {[-0.052, 0.052].map((x, i) => (
+          <mesh key={i} position={[x, -0.058, 0.434]} scale={[0.85, 0.55, 0.45]}>
+            <sphereGeometry args={[0.024, 10, 10]} />
+            <meshStandardMaterial color={SKIN_DK} roughness={0.8} />
           </mesh>
         ))}
 
-        {/* mouth: readable OPENING — dark cavity stretches DOWN from the
-            teeth line while typing/laughing, so the motion is unmistakable */}
-        <mesh ref={mouth} position={[0, -0.14, 0.435]} rotation={[0, 0, Math.PI]}>
-          <torusGeometry args={[0.15, 0.035, 10, 24, Math.PI * 0.9]} />
+        {/* mouth: one open grin — flat top, round bottom, smile rim at the corners */}
+        <mesh position={[0, MOUTH_Y, 0.398]} rotation={[0, 0, Math.PI]}>
+          <torusGeometry args={[0.165, 0.028, 10, 24, Math.PI * 0.95]} />
           <meshStandardMaterial color={MOUTH} roughness={0.5} />
         </mesh>
-        <group ref={jaw} position={[0, -0.145, 0.425]} scale={[1, 0.4, 1]}>
-          {/* the opening itself: dark ellipse that stretches when he talks */}
-          <mesh position={[0, -0.055, -0.004]} scale={[1.35, 1, 0.7]}>
-            <sphereGeometry args={[0.085, 16, 16]} />
+        <group ref={jaw} position={[0, MOUTH_Y, 0.402]} scale={[1, 0.9, 1]}>
+          {/* the opening: half-disc hanging from the top lip, stretches down when talking */}
+          <mesh>
+            <circleGeometry args={[0.15, 28, Math.PI, Math.PI]} />
             <meshStandardMaterial color="#1c0a07" roughness={0.7} />
           </mesh>
-          {/* teeth: clipped to the TOP edge of the opening, always visible */}
-          <mesh position={[0, -0.014, 0.008]}>
-            <boxGeometry args={[0.16, 0.036, 0.018]} />
+          {/* teeth along the top lip */}
+          <mesh position={[0, -0.028, 0.004]}>
+            <boxGeometry args={[0.205, 0.04, 0.014]} />
             <meshStandardMaterial color={EYE_W} roughness={0.25} />
           </mesh>
           {/* tongue at the bottom */}
-          <mesh position={[0, -0.095, 0.012]} scale={[1.1, 0.6, 0.8]}>
-            <sphereGeometry args={[0.048, 10, 10]} />
+          <mesh position={[0, -0.115, 0.004]} scale={[1.2, 0.55, 0.5]}>
+            <sphereGeometry args={[0.058, 10, 10]} />
             <meshStandardMaterial color="#7d3a2d" roughness={0.6} />
           </mesh>
         </group>
