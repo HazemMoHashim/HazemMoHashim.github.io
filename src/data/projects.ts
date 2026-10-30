@@ -47,6 +47,8 @@ export interface Project {
   results: string[]
   tech: string[]
   gallery: GalleryItem[]
+  /** interactive 3D model (glb) — replaces the hero image when present */
+  model?: { src: string; caption?: string }
   github?: string
   external?: string
 }
@@ -155,10 +157,14 @@ export const projects: Project[] = [
     results: [
       'Full fab package generated (Gerbers, drill, BOM, pick & place)',
       'DRC-clean layout across all rule categories',
-      'The hero model on this site is modeled after this board',
+      'The 3D model at the top of this page is the real board, exported from Altium',
     ],
     tech: ['Altium Designer', 'ESP32-WROOM', 'PCB design', 'Embedded', 'Sensor interfacing'],
     github: 'https://github.com/HazemMoHashim',
+    model: {
+      src: '/models/esp32/board.glb',
+      caption: 'REAL BOARD · STEP EXPORT FROM ALTIUM · DRAG TO ROTATE',
+    },
     gallery: [
       { kind: 'pcb-render', caption: '3D render, top side' },
       { kind: 'pcb-render', caption: '3D render, bottom side' },

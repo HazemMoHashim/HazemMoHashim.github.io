@@ -4,11 +4,14 @@
    → implementation → results → gallery → links.
    ============================================================ */
 
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { projectBySlug } from '../data/projects'
 import { profile, caseGreet, caseChat } from '../data/profile'
 import { useReveal } from '../lib/useReveal'
+
+/* the 3D viewer pulls three + glTF loading, so only fetch it on a page that uses it */
+const BoardModel = lazy(() => import('../components/BoardModel'))
 
 export default function Project({ booted }: { booted: boolean }) {
   useReveal()
@@ -75,21 +78,33 @@ export default function Project({ booted }: { booted: boolean }) {
             )}
           </div>
         </div>
-        {/* hero image / placeholder */}
-        <div className="case-hero-image reveal">
-          {project.gallery[0]?.src ? (
-            <img
-              src={project.gallery[0].src}
-              alt={project.gallery[0].caption}
-              className={project.gallery[0].kind === 'diagram' ? 'img-contain' : ''}
-            />
-          ) : (
-            <div className="case-image-placeholder">
-              <span className="placeholder-kind">{project.gallery[0]?.kind ?? 'image'}</span>
-              <span className="placeholder-caption">{project.gallery[0]?.caption ?? 'Hero image'}</span>
-            </div>
-          )}
-        </div>
+        {/* hero: interactive model when the project has one, else image / placeholder */}
+        {project.model ? (
+          <Suspense
+            fallback={
+              <div className="case-hero-model is-loading">
+                <span className="case-model-hint mono">LOADING BOARD</span>
+              </div>
+            }
+          >
+            <BoardModel src={project.model.src} caption={project.model.caption} />
+          </Suspense>
+        ) : (
+          <div className="case-hero-image reveal">
+            {project.gallery[0]?.src ? (
+              <img
+                src={project.gallery[0].src}
+                alt={project.gallery[0].caption}
+                className={project.gallery[0].kind === 'diagram' ? 'img-contain' : ''}
+              />
+            ) : (
+              <div className="case-image-placeholder">
+                <span className="placeholder-kind">{project.gallery[0]?.kind ?? 'image'}</span>
+                <span className="placeholder-caption">{project.gallery[0]?.caption ?? 'Hero image'}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
 

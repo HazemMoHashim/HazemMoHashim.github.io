@@ -94,6 +94,48 @@
   background: #0a0c0b;
   border: 1px solid rgba(196, 122, 61, 0.25);
 }
+/* interactive board: a lit bench, not a card */
+.case-hero-model {
+  position: relative;
+  margin-top: 34px;
+  aspect-ratio: 16 / 9;
+  border: 1px solid rgba(196, 122, 61, 0.25);
+  background:
+    radial-gradient(115% 85% at 50% 4%, rgba(196, 122, 61, 0.13), transparent 60%),
+    linear-gradient(180deg, #0b100e 0%, #060908 100%);
+  overflow: hidden;
+}
+.case-hero-model canvas {
+  display: block;
+  /* vertical page scroll stays native; horizontal drag belongs to the board */
+  touch-action: pan-y;
+}
+.case-model-hint {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 13px;
+  font-size: 9px;
+  line-height: 1.6;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+.case-hero-model.is-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.case-hero-model.is-loading .case-model-hint {
+  position: static;
+  color: var(--ink-2);
+}
+@media (max-width: 720px) {
+  /* a 16:9 stage leaves the board too small to read on a phone */
+  .case-hero-model { aspect-ratio: 5 / 4; }
+  .case-model-hint { left: 12px; top: 10px; letter-spacing: 0.16em; }
+}
 .case-body {
   max-width: 800px;
   margin: 0 auto;
