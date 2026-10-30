@@ -24,6 +24,8 @@ export interface GalleryItem {
   kind: GalleryKind
   caption: string
   src?: string // when absent, the UI renders an intentional placeholder frame
+  /** source document behind a still, offered as a link under the caption */
+  href?: string
 }
 
 export interface Project {
@@ -166,10 +168,27 @@ export const projects: Project[] = [
       caption: 'REAL BOARD · STEP EXPORT FROM ALTIUM · DRAG TO ROTATE',
     },
     gallery: [
-      { kind: 'pcb-render', caption: '3D render, top side' },
-      { kind: 'pcb-render', caption: '3D render, bottom side' },
-      { kind: 'schematic', caption: 'Full schematic sheet' },
-      { kind: 'pcb-photo', caption: 'Fabricated board, awaiting fab run' },
+      {
+        kind: 'pcb-render',
+        caption: 'Top side, the real board exported from Altium',
+        src: '/images/esp32/esp32-top-3d.png',
+      },
+      {
+        kind: 'pcb-render',
+        caption: 'Top copper and silkscreen, straight from the PCB document',
+        src: '/images/esp32/esp32-top.png',
+      },
+      {
+        kind: 'pcb-render',
+        caption: 'Bottom copper, seen with the board turned over',
+        src: '/images/esp32/esp32-bottom.png',
+      },
+      {
+        kind: 'schematic',
+        caption: 'Full schematic sheet',
+        src: '/images/esp32/esp32-schematic.png',
+        href: '/docs/esp32-schematic.pdf',
+      },
     ],
   },
   {

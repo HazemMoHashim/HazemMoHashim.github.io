@@ -2,13 +2,21 @@
    components/BoardModel.tsx — the real ESP32 board, in 3D.
    Source: Altium PCB exported to STEP, tessellated with
    occt-import-js and packed to glb by scripts/build-esp32-glb.mjs.
-   Parts keep their designators (R1, IC1, J4 ...) as node names, and
-   the STEP carries Altium's own per-part colours, so we keep those.
+   Parts keep their designators (R1, IC1, J4 ...) as node names.
 
-   Copper, silkscreen and vias are not in the STEP. They are baked
-   from the PCB document itself by scripts/build-esp32-art.py into
-   board-top.png, and laid onto the board's top faces as a second
-   material (planar UVs in the document's own millimetre frame).
+   Two layers of colour work happen here:
+
+   1. Copper, silkscreen and vias are not in the STEP. They are baked
+      from the PCB document itself by scripts/build-esp32-art.py into
+      board-top.png, and laid onto the board's top faces as a second
+      material (planar UVs in the document's own millimetre frame).
+
+   2. Altium's STEP colours are close but flat: a whole part gets one
+      colour, so pins, terminations and bodies come out identical. The
+      STEP does keep them as separate surfaces, so the parts below are
+      split by geometry (height, footprint, long axis) and re-coloured:
+      metal terminations, black plastic bodies, the ESP32 shield can,
+      its antenna end, the gold castellated edge and the button caps.
 
    Interaction: slow turntable, drag to rotate. No zoom, no pan.
    ============================================================ */
@@ -43,35 +51,406 @@ function designatorOf(obj: THREE.Object3D | null): string {
   return ''
 }
 
-const materialCache = new Map<string, THREE.MeshStandardMaterial>()
+/* ---- materials ------------------------------------------------------- */
+const mat = (
+  color: string,
+  roughness: number,
+  metalness: number,
+  extra?: THREE.MeshStandardMaterialParameters,
+) => new THREE.MeshStandardMaterial({ color, roughness, metalness, ...extra })
 
-/* Altium's STEP colours are the real part colours, so keep them. Only the two
-   things the export gets wrong for this look are overridden: the substrate
-   (green in the file, purple here) and the pin headers (generic blue in the
-   file, black plastic in reality and in the reference). */
-function partMaterial(src: THREE.MeshStandardMaterial, designator: string) {
-  const isHeader = /^J[1-4]$/.test(designator)
-  const key = isHeader ? 'header' : designator === 'IC1' ? 'IC1' : src.name || src.uuid
-  const hit = materialCache.get(key)
-  if (hit) return hit
+const MATS = {
+  /* tin-plated terminations, leads, pins */
+  metal: mat('#b7bbc1', 0.34, 0.78),
+  /* ENIG: the ESP32 module's castellated edge */
+  gold: mat('#c2a03a', 0.32, 0.82),
+  /* resistor / diode / transistor moulding */
+  plastic: mat('#191a1d', 0.56, 0.04),
+  /* MLCC body: beige ceramic */
+  ceramic: mat('#c6b189', 0.72, 0.02),
+  /* ESP32 shield can: nickel silver */
+  can: mat('#c6cad0', 0.33, 0.62),
+  /* the module's own PCB, seen at the antenna end */
+  modulePcb: mat('#1c2a22', 0.76, 0.04),
+  /* tactile switch body and cap */
+  switchBody: mat('#151619', 0.6, 0.03),
+  switchCap: mat('#cfc5ae', 0.52, 0.02),
+} as const
 
-  const mat = src.clone()
-  if (isHeader) {
-    mat.color.set('#15161a')
-    mat.roughness = 0.62
-    mat.metalness = 0.02
-  } else if (designator === 'IC1') {
-    // the ESP32-WROOM shield can: brushed metal, not plastic
-    mat.metalness = 0.38
-    mat.roughness = 0.4
+const SUBSTRATE = mat(MASK_COLOR, 0.62, 0.05)
+
+/* ---- geometry helpers ------------------------------------------------ */
+
+/** Triangle vertex indices of a geometry, indexed or not. */
+function triangles(geo: THREE.BufferGeometry): [number, number, number][] {
+  const index = geo.getIndex()
+  const count = index ? index.count : geo.getAttribute('position').count
+  const out: [number, number, number][] = []
+  for (let t = 0; t + 2 < count; t += 3) {
+    out.push(
+      index
+        ? [index.getX(t), index.getX(t + 1), index.getX(t + 2)]
+        : [t, t + 1, t + 2],
+    )
   }
-  if (mat.color.r > 0.3 && mat.color.g < 0.12 && mat.color.b < 0.12) {
-    // the red power LED reads better with a little of its own light
-    mat.emissive = mat.color.clone()
-    mat.emissiveIntensity = 0.55
+  return out
+}
+
+/** Build a non-indexed geometry from a subset of triangles. */
+function subGeometry(geo: THREE.BufferGeometry, tris: [number, number, number][]) {
+  const pos = geo.getAttribute('position') as THREE.BufferAttribute
+  const nrm = geo.getAttribute('normal') as THREE.BufferAttribute | null
+  const uv = geo.getAttribute('uv') as THREE.BufferAttribute | null
+  const p: number[] = []
+  const n: number[] = []
+  const u: number[] = []
+  for (const tri of tris) {
+    for (const i of tri) {
+      p.push(pos.getX(i), pos.getY(i), pos.getZ(i))
+      if (nrm) n.push(nrm.getX(i), nrm.getY(i), nrm.getZ(i))
+      if (uv) u.push(uv.getX(i), uv.getY(i))
+    }
   }
-  materialCache.set(key, mat)
-  return mat
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3))
+  if (nrm) g.setAttribute('normal', new THREE.Float32BufferAttribute(n, 3))
+  else g.computeVertexNormals()
+  if (uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(u, 2))
+  return g
+}
+
+interface TriInfo {
+  cx: number
+  cy: number
+  cz: number
+  /** face normal, local to the part */
+  nx: number
+  ny: number
+  nz: number
+}
+
+/** Split a mesh into one geometry per label returned by `classify`. */
+function splitBy(
+  geo: THREE.BufferGeometry,
+  classify: (t: TriInfo) => string | null,
+): Map<string, THREE.BufferGeometry> {
+  const pos = geo.getAttribute('position') as THREE.BufferAttribute
+  const buckets = new Map<string, [number, number, number][]>()
+  const a = new THREE.Vector3()
+  const b = new THREE.Vector3()
+  const c = new THREE.Vector3()
+  const ab = new THREE.Vector3()
+  const ac = new THREE.Vector3()
+  const n = new THREE.Vector3()
+
+  for (const tri of triangles(geo)) {
+    a.fromBufferAttribute(pos, tri[0])
+    b.fromBufferAttribute(pos, tri[1])
+    c.fromBufferAttribute(pos, tri[2])
+    ab.subVectors(b, a)
+    ac.subVectors(c, a)
+    n.crossVectors(ab, ac).normalize()
+    const label = classify({
+      cx: (a.x + b.x + c.x) / 3,
+      cy: (a.y + b.y + c.y) / 3,
+      cz: (a.z + b.z + c.z) / 3,
+      nx: n.x,
+      ny: n.y,
+      nz: n.z,
+    })
+    if (!label) continue
+    const list = buckets.get(label)
+    if (list) list.push(tri)
+    else buckets.set(label, [tri])
+  }
+
+  const out = new Map<string, THREE.BufferGeometry>()
+  for (const [label, tris] of buckets) out.set(label, subGeometry(geo, tris))
+  return out
+}
+
+function bboxOf(mesh: THREE.Mesh) {
+  const geo = mesh.geometry as THREE.BufferGeometry
+  geo.computeBoundingBox()
+  const box = geo.boundingBox!.clone()
+  return box
+}
+
+/**
+ * Split a part into moulding and metal leads/pins.
+ *
+ * The leads are the slab at the bottom of the part, and the moulding is
+ * everything above it, so the body footprint is measured from that upper
+ * region instead of guessed from the overall bounding box.
+ */
+function splitLeads(
+  geo: THREE.BufferGeometry,
+  box: THREE.Box3,
+  lowFraction: number,
+  body: THREE.Material,
+  metal: THREE.Material,
+) {
+  const low = box.min.z + (box.max.z - box.min.z) * lowFraction
+  const pos = geo.getAttribute('position') as THREE.BufferAttribute
+  const bodyBox = new THREE.Box3()
+  const v = new THREE.Vector3()
+  for (const tri of triangles(geo)) {
+    const z = (pos.getZ(tri[0]) + pos.getZ(tri[1]) + pos.getZ(tri[2])) / 3
+    if (z <= low) continue
+    for (const i of tri) {
+      v.fromBufferAttribute(pos, i)
+      bodyBox.expandByPoint(v)
+    }
+  }
+  const slack = 0.02
+  const cut = splitBy(geo, (t) => {
+    if (t.cz > low) return 'body'
+    const outside =
+      t.cx < bodyBox.min.x - slack ||
+      t.cx > bodyBox.max.x + slack ||
+      t.cy < bodyBox.min.y - slack ||
+      t.cy > bodyBox.max.y + slack
+    return outside ? 'metal' : 'body'
+  })
+  return { cut, materials: { body, metal } }
+}
+
+function meshesOf(root: THREE.Object3D) {
+  const out: THREE.Mesh[] = []
+  root.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh) out.push(o as THREE.Mesh)
+  })
+  return out
+}
+
+/** Replace a mesh with one mesh per labelled sub-geometry. */
+function replaceWith(
+  mesh: THREE.Mesh,
+  parts: Map<string, THREE.BufferGeometry>,
+  materials: Record<string, THREE.Material>,
+  parent: THREE.Object3D,
+) {
+  for (const [label, geo] of parts) {
+    const m = new THREE.Mesh(geo, materials[label] ?? (mesh.material as THREE.Material))
+    m.name = `${mesh.name || 'part'}:${label}`
+    // a single-primitive glTF node carries the node transform on the mesh
+    // itself, so every piece of it has to inherit that transform
+    m.position.copy(mesh.position)
+    m.quaternion.copy(mesh.quaternion)
+    m.scale.copy(mesh.scale)
+    parent.add(m)
+  }
+  parent.remove(mesh)
+}
+
+/* ---- the antenna end of the ESP32 module ----------------------------- */
+
+/* An ESP32-WROOM antenna is a copper meander on the module's own PCB. It is
+   not in the STEP either, so draw one and map it over the exposed end: a
+   square-wave run of fingers near the far edge, fed by a trace back to the
+   shield can. The canvas is 256 x 512 over a 6.9 x 18 mm patch, so one pixel
+   is about 0.027 x 0.035 mm. */
+const ANT_W = 256
+const ANT_H = 512
+
+function antennaTexture() {
+  const c = document.createElement('canvas')
+  c.width = ANT_W
+  c.height = ANT_H
+  const g = c.getContext('2d')!
+  g.fillStyle = '#1c2a22'
+  g.fillRect(0, 0, ANT_W, ANT_H)
+
+  const gold = '#c2a03a'
+  g.strokeStyle = gold
+  g.lineWidth = 11
+  g.lineJoin = 'miter'
+  g.lineCap = 'butt'
+
+  // the meander: seven fingers, alternately joined at the top and the bottom
+  const top = 40
+  const bottom = 150
+  const left = 26
+  const right = ANT_W - 26
+  const fingers = 7
+  const step = (right - left) / (fingers - 1)
+  g.beginPath()
+  g.moveTo(left, bottom)
+  for (let i = 0; i < fingers; i++) {
+    const x = left + i * step
+    g.lineTo(x, i % 2 === 0 ? top : bottom)
+  }
+  g.stroke()
+
+  // feed trace from the last finger back towards the can, down the middle
+  g.lineWidth = 9
+  g.beginPath()
+  g.moveTo(right, bottom)
+  g.lineTo(right, bottom + 26)
+  g.lineTo(ANT_W / 2, bottom + 26)
+  g.lineTo(ANT_W / 2, ANT_H)
+  g.stroke()
+
+  const tex = new THREE.CanvasTexture(c)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.anisotropy = 4
+  return tex
+}
+
+/* ---- per-part colouring ---------------------------------------------- */
+
+function paintPart(root: THREE.Object3D, designator: string, antenna: THREE.Texture) {
+  const meshes = meshesOf(root)
+  if (!meshes.length) return
+
+  /* a part exported as several surfaces (resistors, the QFN, the USB
+     connector): sorted by footprint, the body is the first non-shell surface
+     and everything after it is a termination or a pin */
+  if (/^R\d+$/.test(designator) || designator === 'IC4' || designator === 'J6') {
+    /* the micro-USB shell is the two biggest surfaces; they are metal, and the
+       black plastic tongue sits behind them */
+    const shell = designator === 'J6' ? 2 : 0
+    const boxes = meshes.map((m) => ({ m, box: bboxOf(m) }))
+    boxes.sort((p, q) => {
+      const a = p.box.getSize(new THREE.Vector3())
+      const b = q.box.getSize(new THREE.Vector3())
+      return b.x * b.y - a.x * a.y
+    })
+    boxes.forEach(({ m }, i) => {
+      if (i < shell) m.material = MATS.metal
+      else if (i === shell) m.material = MATS.plastic
+      else m.material = MATS.metal
+    })
+    return
+  }
+
+  /* everything below is a single surface that has to be cut up */
+  const mesh = meshes[0]
+  if (meshes.length > 1) return
+  const geo = mesh.geometry as THREE.BufferGeometry
+  const box = bboxOf(mesh)
+  const size = box.getSize(new THREE.Vector3())
+  const mid = box.getCenter(new THREE.Vector3())
+  const parent = mesh.parent ?? root
+
+  if (/^C\d+$/.test(designator) || /^D\d+$/.test(designator)) {
+    // two metal ends along the long axis, moulding in between
+    const alongX = size.x >= size.y
+    const half = (alongX ? size.x : size.y) / 2
+    const end = half * 0.6
+    const cut = splitBy(geo, (t) =>
+      (alongX ? Math.abs(t.cx - mid.x) : Math.abs(t.cy - mid.y)) > end ? 'metal' : 'body',
+    )
+    replaceWith(mesh, cut, { metal: MATS.metal, body: MATS.plastic }, parent)
+    return
+  }
+
+  if (/^Q\d+$/.test(designator) || designator === 'IC3') {
+    // SOT-23 / SOT-223: black moulding, tin leads underneath
+    const { cut, materials } = splitLeads(geo, box, 0.3, MATS.plastic, MATS.metal)
+    replaceWith(mesh, cut, materials, parent)
+    return
+  }
+
+  if (designator === 'IC1') {
+    // shield can on top, the module PCB below it, gold castellations on the
+    // edge, and the meander antenna on the exposed end
+    const canZ = box.min.z + size.z * 0.4
+    const antennaX = box.min.x + size.x * 0.27
+    const edgeX = size.x / 2 - 0.35
+    const edgeY = size.y / 2 - 0.35
+    const cut = splitBy(geo, (t) => {
+      if (t.cz > canZ) return 'can'
+      const side = Math.abs(t.nz) < 0.6
+      const nearEdge =
+        Math.abs(t.cx - mid.x) > edgeX || Math.abs(t.cy - mid.y) > edgeY
+      if (side && nearEdge) return 'gold'
+      if (t.nz > 0.5 && t.cx < antennaX) return 'antenna'
+      return 'pcb'
+    })
+    const antennaGeo = cut.get('antenna')
+    if (antennaGeo) {
+      // planar UVs over just the antenna end
+      const pos = antennaGeo.getAttribute('position') as THREE.BufferAttribute
+      const uv: number[] = []
+      const w = antennaX - box.min.x
+      for (let i = 0; i < pos.count; i++) {
+        uv.push((pos.getX(i) - box.min.x) / w, (pos.getY(i) - box.min.y) / size.y)
+      }
+      antennaGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2))
+    }
+    replaceWith(
+      mesh,
+      cut,
+      {
+        can: MATS.can,
+        pcb: MATS.modulePcb,
+        gold: MATS.gold,
+        antenna: new THREE.MeshStandardMaterial({ map: antenna, roughness: 0.68, metalness: 0.05 }),
+      },
+      parent,
+    )
+    return
+  }
+
+  if (/^S[12]$/.test(designator)) {
+    // tactile switch: cap above the collar, pins past the housing, black body
+    const capZ = box.min.z + size.z * 0.62
+    const pinZ = box.min.z + size.z * 0.14
+    const cut = splitBy(geo, (t) => {
+      if (t.cz > capZ) return 'cap'
+      if (t.cz < pinZ) {
+        const inside =
+          Math.abs(t.cx - mid.x) <= size.x * 0.33 && Math.abs(t.cy - mid.y) <= size.y * 0.44
+        return inside ? 'body' : 'metal'
+      }
+      return 'body'
+    })
+    replaceWith(mesh, cut, { cap: MATS.switchCap, body: MATS.switchBody, metal: MATS.metal }, parent)
+    return
+  }
+
+  if (/^J[1-4]$/.test(designator)) {
+    mesh.material = MATS.plastic
+  }
+}
+
+function useBoardModel(src: string) {
+  const { scene } = useGLTF(src)
+  const artTexture = useTexture(ART_SRC)
+
+  return useMemo(() => {
+    artTexture.colorSpace = THREE.SRGBColorSpace
+    artTexture.anisotropy = 8
+
+    const model = scene.clone(true)
+    const antenna = antennaTexture()
+
+    // collect the designator nodes first: painting replaces meshes, which must
+    // not happen while traverse is still walking the tree
+    const parts = new Map<string, THREE.Object3D>()
+    model.traverse((obj) => {
+      const n = (obj.name || '').trim()
+      if (DESIGNATOR.test(n) && !parts.has(n)) parts.set(n, obj)
+    })
+
+    const board = parts.get('Board') as THREE.Mesh | undefined
+    if (board && board.isMesh) {
+      const { plain, art } = splitBoardTop(board)
+      board.geometry = plain
+      board.material = SUBSTRATE
+      const top = new THREE.Mesh(art, new THREE.MeshStandardMaterial({ map: artTexture, roughness: 0.6, metalness: 0.05 }))
+      top.name = 'BoardTopArt'
+      top.renderOrder = 1
+      board.add(top)
+    }
+
+    for (const [designator, root] of parts) {
+      if (designator === 'Board') continue
+      paintPart(root, designator, antenna)
+    }
+    return model
+  }, [scene, artTexture])
 }
 
 /* Split the substrate into top faces and everything else. The top faces get the
@@ -125,55 +504,6 @@ function splitBoardTop(board: THREE.Mesh) {
   art.computeVertexNormals()
 
   return { plain, art }
-}
-
-function useBoardModel(src: string) {
-  const { scene } = useGLTF(src)
-  const artTexture = useTexture(ART_SRC)
-
-  return useMemo(() => {
-    artTexture.colorSpace = THREE.SRGBColorSpace
-    artTexture.anisotropy = 8
-
-    const model = scene.clone(true)
-    const meshes: THREE.Mesh[] = []
-    const substrate = new THREE.MeshStandardMaterial({
-      color: MASK_COLOR,
-      roughness: 0.62,
-      metalness: 0.05,
-    })
-    const artMaterial = new THREE.MeshStandardMaterial({
-      map: artTexture,
-      roughness: 0.6,
-      metalness: 0.05,
-    })
-
-    model.traverse((obj) => {
-      const mesh = obj as THREE.Mesh
-      if (!mesh.isMesh) return
-      mesh.castShadow = false
-      mesh.receiveShadow = false
-      meshes.push(mesh)
-    })
-
-    // the split below adds a child mesh; walking a snapshot keeps traverse from
-    // visiting it, which would inherit the 'Board' name and split forever
-    for (const mesh of meshes) {
-      const designator = designatorOf(mesh)
-      if (designator === 'Board') {
-        const { plain, art } = splitBoardTop(mesh)
-        mesh.geometry = plain
-        mesh.material = substrate
-        const top = new THREE.Mesh(art, artMaterial)
-        top.name = 'BoardTopArt'
-        top.renderOrder = 1
-        mesh.add(top)
-        continue
-      }
-      mesh.material = partMaterial(mesh.material as THREE.MeshStandardMaterial, designator)
-    }
-    return model
-  }, [scene, artTexture])
 }
 
 /* Frame the board from the canvas aspect, not a fixed position: the same 69 mm
@@ -325,7 +655,7 @@ export default function BoardModel({ src, caption, compact = false }: Props) {
       <Canvas
         dpr={compact ? [1, 1.2] : [1, 1.6]}
         frameloop={visible ? 'always' : 'never'}
-        gl={{ antialias: true, alpha: true }}
+        gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
         camera={{ position: [0, 54, 88], fov: 30 }}
       >
         <CameraRig />

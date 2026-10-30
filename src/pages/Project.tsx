@@ -152,7 +152,13 @@ export default function Project({ booted }: { booted: boolean }) {
                       src={item.src}
                       alt={item.caption}
                       loading="lazy"
-                      className={item.kind === 'diagram' ? 'img-contain' : ''}
+                      className={
+                        item.kind === 'diagram' || item.kind === 'schematic'
+                          ? 'img-contain'
+                          : item.kind === 'pcb-render'
+                            ? 'img-fit'
+                            : ''
+                      }
                     />
                   ) : (
                     <div className="case-image-placeholder">
@@ -160,7 +166,14 @@ export default function Project({ booted }: { booted: boolean }) {
                       <span className="placeholder-caption">{item.caption}</span>
                     </div>
                   )}
-                  <figcaption className="figcap">{item.caption}</figcaption>
+                  <figcaption className="figcap">
+                    {item.caption}
+                    {item.href && (
+                      <a className="figcap-link mono" href={item.href} target="_blank" rel="noreferrer">
+                        OPEN PDF
+                      </a>
+                    )}
+                  </figcaption>
                 </figure>
               ))}
             </div>
