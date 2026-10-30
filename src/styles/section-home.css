@@ -209,6 +209,15 @@
   gap: 6px;
 }
 .placeholder-kind { font-size: 8px; color: var(--copper); }
+/* the real board inside a card: same lit bench as the case hero, no hint */
+.card-model {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% 6%, rgba(196, 122, 61, 0.12), transparent 62%),
+    linear-gradient(180deg, #0b100e 0%, #060908 100%);
+}
+.card-model canvas { display: block; }
 .card-body {
   padding: 18px 18px 22px;
   display: flex;

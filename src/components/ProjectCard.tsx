@@ -5,8 +5,13 @@
    Gallery slots with no src render as intentional placeholder frames.
    ============================================================ */
 
+import { lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import { Project } from '../data/projects'
+
+/* a card that carries a real 3D model pulls three + glTF loading, so keep the
+   viewer out of the main bundle and let the card paint its frame first */
+const BoardModel = lazy(() => import('./BoardModel'))
 
 interface Props {
   project: Project
@@ -24,9 +29,20 @@ export default function ProjectCard({ project, tier = 'small', delay }: Props) {
       style={{ '--reveal-delay': `${delay ?? 0}s` } as React.CSSProperties}
     >
       <Link to={`/projects/${project.slug}`} className="card-link" aria-label={`Open ${project.title} case study`}>
-        {/* image area — real image when we have one, placeholder frame when not */}
+        {/* image area — real 3D model, real image, or placeholder frame */}
         <div className="card-image">
-          {project.gallery[0]?.src ? (
+          {project.model ? (
+            <Suspense
+              fallback={
+                <div className="card-image-placeholder">
+                  <span className="placeholder-kind">3D</span>
+                  <span className="placeholder-caption">Loading board</span>
+                </div>
+              }
+            >
+              <BoardModel src={project.model.src} compact />
+            </Suspense>
+          ) : project.gallery[0]?.src ? (
             <img
               src={project.gallery[0].src}
               alt={project.gallery[0].caption}
